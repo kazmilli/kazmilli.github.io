@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice to Text and Translate</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+        }
+
+        #container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        #output {
+            font-size: 16px;
+            min-height: 200px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+            border-radius: 5px;
+            overflow-y: scroll;
+            max-height: 300px;
+        }
+
+        button {
+            font-size: 16px;
+            margin: 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>Voice to Text and Translate</h1>
+        <button id="startButton">Start Listening</button>
+        <button id="stopButton" disabled>Stop</button>
+        <select id="languageSelector">
+            <option value="fr">French</option>
+            <option value="es">Spanish</option>
+            <option value="de">German</option>
+            <!-- Add more languages as needed -->
+        </select>
+        <div id="output"></div>
+    </div>
+
+    <script>
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const languageSelector = document.getElementById('languageSelector');
+        const output = document.getElementById('output');
+
+        let recognition = null;
+
+        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+
+            recognition.lang = 'en-US';
+
+            startButton.addEventListener('click', () => {
+                recognition.start();
+                startButton.disabled = true;
+                stopButton.disabled = false;
+            });
+
+            stopButton.addEventListener('click', () => {
+                recognition.stop();
+                startButton.disabled = false;
+                stopButton.disabled = true;
+            });
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                const translatedText = translateText(transcript, languageSelector.value);
+                appendToOutput('You said: ' + transcript + '\nTranslation: ' + translatedText);
+            };
+        } else {
+            output.textContent = 'Speech recognition is not supported in this browser.';
+            startButton.disabled = true;
+        }
+
+        function translateText(text, targetLang) {
+            // Replace 'YOUR_GOOGLE_TRANSLATE_API_KEY' with your actual API key
+            const apiKey = 'YOUR_GOOGLE_TRANSLATE_API_KEY';
+            const apiUrl = `https://translation.googleapis.com/language/translate/v2?key=${apiKey}`;
+
+            const data = {
+                q: text,
+                target: targetLang,
+            };
+
+            fetch(apiUrl, {
+                method: 'POST',
+                body: JSON.stringify(data),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(result => {
+                const translation = result.data.translations[0].translatedText;
+                return translation;
+            })
+            .catch(error => {
+                console.error('Error translating text:', error);
+            });
+        }
+
+        function appendToOutput(text) {
+            output.textContent += text + '\n';
+            output.scrollTop = output.scrollHeight;
+        }
+    </script>
+</body>
+</html>
